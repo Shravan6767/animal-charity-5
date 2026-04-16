@@ -1,45 +1,69 @@
 <!DOCTYPE html>
-<html>
-<head><title>Admin Dashboard</title></head>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .contact-card { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; border-radius: 5px; }
+        #status { font-weight: bold; color: #666; }
+    </style>
+</head>
 <body>
-    <h1>Messages</h1>
-    <div id="status">Loading...</div>
-    <ul id="contact-list"></ul>
+    <h1>Admin Messages</h1>
+    <div id="status">Connecting to backend...</div>
+    <div id="contact-list"></div>
 
 <script>
     async function loadContacts() {
-        // 1. Your base URL (Ensure there is NO slash at the end here)
+        // Double check this URL matches your Render Dashboard exactly!
+        // Is it "chairty" or "charity"? 
         const renderUrl = "https://animal-chairty-4.onrender.com"; 
-        
-        // 2. The specific "door" to the data
         const apiPath = "/api/admin/contacts";
 
+        const statusDiv = document.getElementById('status');
+        const listDiv = document.getElementById('contact-list');
+
         try {
-            // 3. This combines them into one full address
-            const res = await fetch(renderUrl + apiPath);
+            // Combining the URL - ensure no double slashes
+            const response = await fetch(`${renderUrl}${apiPath}`);
             
-            if (!res.ok) throw new Error("Server error: " + res.status);
+            if (!response.ok) {
+                throw new Error(`Server returned ${response.status}`);
+            }
+
+            const data = await response.json();
             
-            const data = await res.json();
-            
-            // 4. Now, show the data on your page
-            const list = document.getElementById('contact-list'); // or your table ID
-            data.forEach(c => {
-                const li = document.createElement('li');
-                li.innerText = `${c.name}: ${c.message}`;
-                list.appendChild(li);
+            // Clear the "Loading" status
+            statusDiv.style.display = 'none';
+
+            if (data.length === 0) {
+                statusDiv.innerText = "No messages found in database.";
+                statusDiv.style.display = 'block';
+                return;
+            }
+
+            // Render the data
+            listDiv.innerHTML = ''; // Clear previous content
+            data.forEach(contact => {
+                const div = document.createElement('div');
+                div.className = 'contact-card';
+                // matches the fields 'name' and 'message' in your MongoDB
+                div.innerHTML = `
+                    <strong>Name:</strong> ${contact.name || 'Anonymous'}<br>
+                    <strong>Message:</strong> ${contact.message || 'No message'}
+                `;
+                listDiv.appendChild(div);
             });
-            
-            // Hide "Loading" or "Server not running" messages
-            document.getElementById('status').style.display = 'none';
 
         } catch (err) {
-            console.error("Connection failed:", err);
-            document.getElementById('status').innerText = "Error: " + err.message;
+            console.error("Fetch Error:", err);
+            statusDiv.innerText = "Error: Could not load data. " + err.message;
+            statusDiv.style.color = "red";
         }
     }
 
-    // Don't forget to actually run the function!
+    // Initialize the load
     loadContacts();
 </script>
 </body>
