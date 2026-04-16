@@ -26,14 +26,22 @@
 
 <script>
     async function loadData() {
-        // Double check the spelling of 'chairty' in your Render dashboard!
-        const BASE_URL = "https://animal-chairty-4.onrender.com"; 
-        const FULL_URL = BASE_URL + "/get-data"; // Match the new name in app.py
+        const FULL_URL = "https://animal-chairty-4.onrender.com/get-data";
 
         try {
-            const response = await fetch(FULL_URL);
+            console.log("Fetching from:", FULL_URL);
+            const response = await fetch(FULL_URL, {
+                mode: 'cors', // Explicitly ask for CORS
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP Error! Status: ${response.status}`);
+            }
+
             const data = await response.json();
-            
             document.getElementById('status').style.display = 'none';
             const container = document.getElementById('container');
             container.innerHTML = ''; 
@@ -45,7 +53,8 @@
                 container.appendChild(div);
             });
         } catch (err) {
-            // This will now tell us if it's a 404 (wrong URL) or something else
+            console.error("Fetch failed:", err);
+            // This will show the ACTUAL error in the browser console (F12)
             document.getElementById('status').innerText = "Status: " + err.message;
         }
     }
