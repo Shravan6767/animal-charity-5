@@ -1,57 +1,88 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>Admin Dashboard</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; }
-        .message-box { border: 1px solid #ccc; padding: 10px; margin: 10px 0; border-radius: 8px; background: #f9f9f9; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; background-color: #f4f7f6; }
+        h1 { color: #333; border-bottom: 2px solid #333; padding-bottom: 10px; }
+        #status { padding: 15px; margin-bottom: 20px; border-radius: 5px; background: #e8e8e8; font-weight: bold; }
+        .message-box { 
+            border: 1px solid #ddd; 
+            padding: 20px; 
+            margin: 15px 0; 
+            border-radius: 10px; 
+            background: white; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .user-name { color: #2c3e50; font-size: 1.1em; }
+        .user-msg { color: #555; margin-top: 5px; }
     </style>
 </head>
 <body>
     <h1>Admin Messages</h1>
-    <div id="status">Connecting...</div>
+    <div id="status">Connecting to Render Backend...</div>
     <div id="container"></div>
 
 <script>
     async function loadData() {
-        // STEP 1: DOUBLE CHECK THIS SPELLING IN RENDER
-        // Is it "chairty" or "charity"? If this is wrong, it defaults to the homepage.
+        // STEP 1: Ensure NO trailing slash on the base URL
         const BASE_URL = "https://animal-chairty-4.onrender.com"; 
+        // STEP 2: Explicitly build the path
         const FULL_URL = BASE_URL + "/api/admin/contacts";
 
-        console.log("Attempting to fetch from:", FULL_URL);
+        const statusElement = document.getElementById('status');
+        const containerElement = document.getElementById('container');
+
+        console.log("Fetching from:", FULL_URL);
 
         try {
-            const response = await fetch(FULL_URL);
-            
-            // If it returns "Backend is Running", it's returning text, not JSON.
-            // This line will catch if the URL is wrong.
+            const response = await fetch(FULL_URL, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+
+            // If we get a 200 but it's the wrong content, Render is redirecting to the homepage
             const contentType = response.headers.get("content-type");
-            if (!contentType || !contentType.includes("application/json")) {
-                throw new Error("The server sent back a webpage instead of data. Check your API path!");
+            
+            if (!response.ok || !contentType || !contentType.includes("application/json")) {
+                const text = await response.text();
+                if (text.includes("Backend is Running")) {
+                    throw new Error("URL Mismatch: The server sent the homepage instead of data. Check the spelling of your API path in app.py.");
+                }
+                throw new Error(`Server responded with ${response.status} (${contentType})`);
             }
 
             const data = await response.json();
-            document.getElementById('status').style.display = 'none';
             
-            const container = document.getElementById('container');
+            // Success! Clear the status and the container
+            statusElement.style.display = 'none';
+            containerElement.innerHTML = '';
+
             if (data.length === 0) {
-                container.innerHTML = "<p>No messages found.</p>";
+                containerElement.innerHTML = "<p>Database is connected but no messages were found.</p>";
             } else {
                 data.forEach(item => {
                     const div = document.createElement('div');
                     div.className = 'message-box';
-                    div.innerHTML = `<strong>${item.name}:</strong> ${item.message}`;
-                    container.appendChild(div);
+                    div.innerHTML = `
+                        <div class="user-name"><strong>From:</strong> ${item.name || 'Anonymous'}</div>
+                        <div class="user-msg"><strong>Message:</strong> ${item.message}</div>
+                    `;
+                    containerElement.appendChild(div);
                 });
             }
         } catch (err) {
-            console.error("Error details:", err);
-            document.getElementById('status').innerText = "Status: " + err.message;
-            document.getElementById('status').style.color = "red";
+            console.error("Critical Error:", err);
+            statusElement.style.backgroundColor = "#ffebee";
+            statusElement.style.color = "#c62828";
+            statusElement.innerText = "Connection Error: " + err.message;
         }
     }
 
+    // Run on load
     loadData();
 </script>
 </body>
