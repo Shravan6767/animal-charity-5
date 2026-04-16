@@ -1,70 +1,58 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
     <title>Admin Dashboard</title>
     <style>
         body { font-family: sans-serif; padding: 20px; }
-        .contact-card { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; border-radius: 5px; }
-        #status { font-weight: bold; color: #666; }
+        .message-box { border: 1px solid #ccc; padding: 10px; margin: 10px 0; border-radius: 8px; background: #f9f9f9; }
     </style>
 </head>
 <body>
     <h1>Admin Messages</h1>
-    <div id="status">Connecting to backend...</div>
-    <div id="contact-list"></div>
+    <div id="status">Connecting...</div>
+    <div id="container"></div>
 
 <script>
-    async function loadContacts() {
-        // Double check this URL matches your Render Dashboard exactly!
-        // Is it "chairty" or "charity"? 
-        const renderUrl = "https://animal-chairty-4.onrender.com"; 
-        const apiPath = "/api/admin/contacts";
+    async function loadData() {
+        // STEP 1: DOUBLE CHECK THIS SPELLING IN RENDER
+        // Is it "chairty" or "charity"? If this is wrong, it defaults to the homepage.
+        const BASE_URL = "https://animal-chairty-4.onrender.com"; 
+        const FULL_URL = BASE_URL + "/api/admin/contacts";
 
-        const statusDiv = document.getElementById('status');
-        const listDiv = document.getElementById('contact-list');
+        console.log("Attempting to fetch from:", FULL_URL);
 
         try {
-            // Combining the URL - ensure no double slashes
-            const response = await fetch(`${renderUrl}${apiPath}`);
+            const response = await fetch(FULL_URL);
             
-            if (!response.ok) {
-                throw new Error(`Server returned ${response.status}`);
+            // If it returns "Backend is Running", it's returning text, not JSON.
+            // This line will catch if the URL is wrong.
+            const contentType = response.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) {
+                throw new Error("The server sent back a webpage instead of data. Check your API path!");
             }
 
             const data = await response.json();
+            document.getElementById('status').style.display = 'none';
             
-            // Clear the "Loading" status
-            statusDiv.style.display = 'none';
-
+            const container = document.getElementById('container');
             if (data.length === 0) {
-                statusDiv.innerText = "No messages found in database.";
-                statusDiv.style.display = 'block';
-                return;
+                container.innerHTML = "<p>No messages found.</p>";
+            } else {
+                data.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'message-box';
+                    div.innerHTML = `<strong>${item.name}:</strong> ${item.message}`;
+                    container.appendChild(div);
+                });
             }
-
-            // Render the data
-            listDiv.innerHTML = ''; // Clear previous content
-            data.forEach(contact => {
-                const div = document.createElement('div');
-                div.className = 'contact-card';
-                // matches the fields 'name' and 'message' in your MongoDB
-                div.innerHTML = `
-                    <strong>Name:</strong> ${contact.name || 'Anonymous'}<br>
-                    <strong>Message:</strong> ${contact.message || 'No message'}
-                `;
-                listDiv.appendChild(div);
-            });
-
         } catch (err) {
-            console.error("Fetch Error:", err);
-            statusDiv.innerText = "Error: Could not load data. " + err.message;
-            statusDiv.style.color = "red";
+            console.error("Error details:", err);
+            document.getElementById('status').innerText = "Status: " + err.message;
+            document.getElementById('status').style.color = "red";
         }
     }
 
-    // Initialize the load
-    loadContacts();
+    loadData();
 </script>
 </body>
 </html>
