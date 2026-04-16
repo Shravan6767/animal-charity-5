@@ -6,29 +6,41 @@
     <div id="status">Loading...</div>
     <ul id="contact-list"></ul>
 
-    <script>
-        async function loadData() {
-            try {
-                // REPLACE THIS with your actual Render URL after it deploys
-                const renderUrl = "https://animal-chairty-4.onrender.com";
-                
-                const res = await fetch(renderUrl);
-                if (!res.ok) throw new Error("Server error: " + res.status);
-                
-                const data = await res.json();
-                document.getElementById('status').style.display = 'none';
-                
-                const list = document.getElementById('contact-list');
-                data.forEach(c => {
-                    const li = document.createElement('li');
-                    li.innerText = `${c.name}: ${c.message}`;
-                    list.appendChild(li);
-                });
-            } catch (err) {
-                document.getElementById('status').innerText = "Error: " + err.message;
-            }
+<script>
+    async function loadContacts() {
+        // 1. Your base URL (Ensure there is NO slash at the end here)
+        const renderUrl = "https://animal-chairty-4.onrender.com"; 
+        
+        // 2. The specific "door" to the data
+        const apiPath = "/api/admin/contacts";
+
+        try {
+            // 3. This combines them into one full address
+            const res = await fetch(renderUrl + apiPath);
+            
+            if (!res.ok) throw new Error("Server error: " + res.status);
+            
+            const data = await res.json();
+            
+            // 4. Now, show the data on your page
+            const list = document.getElementById('contact-list'); // or your table ID
+            data.forEach(c => {
+                const li = document.createElement('li');
+                li.innerText = `${c.name}: ${c.message}`;
+                list.appendChild(li);
+            });
+            
+            // Hide "Loading" or "Server not running" messages
+            document.getElementById('status').style.display = 'none';
+
+        } catch (err) {
+            console.error("Connection failed:", err);
+            document.getElementById('status').innerText = "Error: " + err.message;
         }
-        loadData();
-    </script>
+    }
+
+    // Don't forget to actually run the function!
+    loadContacts();
+</script>
 </body>
 </html>
